@@ -1,34 +1,153 @@
 # OpenPOTD
 
-OpenPOTD is an open source POTD manager discord bot
-built to grade short answer and multichoice problems.
-OpenPOTD has many features including automatically 
-posting problems, grading submissions, being able to
-display and check submissions for past problems (and 
-mark them as unofficial), set and give medal roles, and 
-being able to give people who solved the potd a special
-role (typically to let them talk in a private channel). 
+OpenPOTD is a Discord bot for running PoTW/POTD style competitions with:
 
-## Adding the OpenPOTD bot
+- scheduled posting,
+- multi-guild support,
+- subproblems with marks,
+- automatic integer checking,
+- manual marking workflows with review threads and buttons,
+- rankings and roles.
 
-The OpenPOTD team maintains an instance of the OpenPOTD
-bot which we pick problems for ourselves. For a tutorial
-on how to add the bot and configure it, visit 
-https://openpotd.github.io/install/. 
+## Requirements
 
-## Running OpenPOTD yourself
+- Python `3.11+` (CI runs on `3.11` and `3.13`)
+- A Discord bot token
+- Bot invited with slash-command + message permissions
 
-Register a bot account with Discord and then run the
-`init.sh` script (for Linux / Mac) or `init.bat` script
-for Windows. This will create the required config and
-data files, then put the token provided by Discord
-into the `config/token.txt` file.
+## Local Setup
 
-### Using OpenPOTD
+1. Initialize files:
 
-1. Edit the `config/config.yml` file to your liking. 
-1. Add a new season with the `%newseason` command. 
-1. Add problems with the `%add` command. 
-1. Link images to problems with the `%linkimg` command. 
-1. The bot should post problems at the specified time 
-every day and alert if there is no problem. 
+```sh
+# Windows
+init.bat
+
+# Linux/macOS
+./init.sh
+```
+
+2. Create/use a virtual environment, then install dependencies:
+
+```sh
+python -m venv .venv
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+# Linux/macOS
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+3. Configure `config/config.yml`:
+   - add your Discord user ID to `authorised`,
+   - set `allowed_guild_id` to blank, one guild ID, or a list of guild IDs,
+   - set `posting_time` to `HH:MM` (or leave blank to disable auto-posting),
+   - keep `allow_local_db_reset: false` outside local testing.
+
+4. Provide token:
+   - local: put token in `config/token.txt`, or
+   - env var: set `DISCORD_TOKEN` (or the name configured in `token_env_var`).
+
+5. Start:
+
+```sh
+python openpotd.py
+```
+
+## First-Time In-Server Setup
+
+Run these (slash commands recommended) in each guild:
+
+1. `/init`
+2. `/potd_channel <channel>`
+3. Optional `/subproblem_thread_channel <text-or-forum-channel>`
+4. Optional `/submission_channel <channel>` (manual submissions mirrored to staff)
+5. Optional `/submission_ping_role <role>`
+6. Optional `/ping_role <role>` (role pinged when posting problems)
+7. Optional `/auto_publish_news true|false`
+
+Then create season + problems:
+
+1. `/newseason <name>`
+2. `/start_season <season_id>`
+3. `/add ...` for main problems
+4. `/add_subproblem ...` and `/link_subimg ...` for subproblems
+
+Post immediately with:
+
+- `/post` (today’s scheduled problem),
+- `/post_problem problem_id:<id>` (specific problem, also creates subproblem threads).
+
+## Submission/Marking Model
+
+- If a problem has subproblems, users can submit by DM text or `/submit` (interactive picker).
+- Subproblem with `answer` set: auto integer check.
+- Subproblem without `answer`: manual review flow.
+- Manual flow creates mirrored staff review entries with `Claim / Correct / Incorrect` buttons.
+- Review state persists across bot restarts.
+
+## Discord Permissions Checklist
+
+Minimum practical permissions in posting/review channels:
+
+- `View Channel`
+- `Send Messages`
+- `Embed Links`
+- `Attach Files` (if using images)
+- `Create Public Threads` + `Send Messages in Threads` (for subproblem/review threads)
+- `Manage Messages` (only needed for auto-publish in Announcement channels)
+
+If posting fails with `Missing Permissions (50013)`, check that channel-level overrides did not remove one of these.
+
+## Deployment (Railway)
+
+Use this repository as a Railway service. `Procfile` is included:
+
+```txt
+worker: python -u openpotd.py
+```
+
+### Required Railway variables
+
+- `DISCORD_TOKEN=<your token>`
+
+### Recommended Railway variables
+
+- `TZ=Australia/Sydney` (or your posting timezone)
+- `OPENPOTD_DATA_DIR=/app/data` (when using a mounted volume)
+- `OPENPOTD_CONFIG_DIR=/app/config` (only if you intentionally externalize config)
+
+### Persistent storage
+
+Mount a volume and keep the SQLite DB under that mount (for example `/app/data`).
+Without persistent storage, season/problem/submission state is lost on redeploy/restart.
+
+### Deploy checklist
+
+1. Set env vars.
+2. Attach persistent volume.
+3. Deploy.
+4. Check logs for:
+   - successful Discord login,
+   - cog load messages,
+   - app command sync for your guilds.
+5. In Discord, run `/config` and `/post_problem` on a test problem.
+
+## Environment Variables
+
+- `DISCORD_TOKEN` (or custom `token_env_var` in config): bot token
+- `OPENPOTD_DATA_DIR`: override default `./data`
+- `OPENPOTD_CONFIG_DIR`: override default `./config`
+
+If no token env var is set, bot reads the token file configured by `token` (default `config/token.txt`).
+
+## Tests
+
+```sh
+python -m unittest discover -s tests -p "test_*.py" -v
+python -m compileall -q openpotd.py shared.py cogs tests
+```
+
+CI runs automatically on push/PR via `.github/workflows/ci.yml`.

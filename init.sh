@@ -1,10 +1,16 @@
 #!/bin/bash
+set -euo pipefail
 
-# Creating config files
-mkdir config
-cp default_config.yml config/config.yml
-touch config/token.txt  # Fill in the provided token yourself
+mkdir -p config data
 
-# Creating database
-mkdir data
-sqlite3 data/data.db < schema.sql
+if [ ! -f config/config.yml ]; then
+  cp default_config.yml config/config.yml
+fi
+
+if [ ! -f config/token.txt ]; then
+  : > config/token.txt
+fi
+
+python3 -c "import pathlib, sqlite3; conn = sqlite3.connect('data/data.db'); conn.executescript(pathlib.Path('schema.sql').read_text(encoding='utf-8')); conn.commit(); conn.close()"
+
+echo "OpenPOTD files are ready. Put your Discord bot token in config/token.txt."

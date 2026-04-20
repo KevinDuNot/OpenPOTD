@@ -1,7 +1,10 @@
 /config/
 /data/
+/token.txt
 /.idea/
 /venv/
+/.venv/
 /__pycache__/
 */__pycache__/
 !*/config.yml
+/LOCAL_DOCS/

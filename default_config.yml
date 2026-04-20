@@ -1,21 +1,40 @@
 token: token.txt
+# Optional environment variable for deployments (Railway, etc.).
+token_env_var: DISCORD_TOKEN
 blacklist: blacklist.txt
 prefix: '%'
 
 # Discord presence
-presence: "Use %help. "
+presence: "Use /help."
 
 # Number of points someone would receive if they are the only one to solve a problem
 base_points: 1000
 
 # Scheduled posting time of POTDs
+# Use 24-hour HH:MM format, for example "18:00".
+# Leave blank to disable automatic posting.
 posting_time:
 
 # Who's authorised to use bot commands?
-authorised:
+authorised: []
+
+# Restrict guild-side behaviour.
+# Leave blank to allow all servers, set one integer to allow one server,
+# or set a list of integers to allow specific servers.
+allowed_guild_id:
+
+# Whether users must wait between answer submissions.
+cooldown: true
+
+# Default lookback window (minutes) used by the clean_dm command.
+dm_cleanup_window_minutes: 1440
+
+# Allow destructive local database reset commands.
+# Keep this false in production/deploy.
+allow_local_db_reset: false
 
 # ?OTD
-otd_prefix: "P"
+otd_prefix: "PoTW"
 
 # Cogs that need to be loaded with the bot
 cogs:
