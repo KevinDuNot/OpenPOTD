@@ -40,14 +40,14 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-3. Configure `config/config.yml`:
+3. Configure `data/config/config.yml`:
    - add your Discord user ID to `authorised`,
    - set `allowed_guild_id` to blank, one guild ID, or a list of guild IDs,
    - set `posting_time` to `HH:MM` (or leave blank to disable auto-posting),
    - keep `allow_local_db_reset: false` outside local testing.
 
 4. Provide token:
-   - local: put token in `config/token.txt`, or
+   - local: put token in `data/config/token.txt`, or
    - env var: set `DISCORD_TOKEN` (or the name configured in `token_env_var`).
 
 5. Start:
@@ -113,6 +113,12 @@ Use this repository as a Railway service. `Procfile` is included:
 ```txt
 worker: python -u openpotd.py
 ```
+
+For persistent data, attach one Railway Volume at `/app/data`. The app reads:
+
+- SQLite at `/app/data/data.db`
+- config at `/app/data/config/config.yml`
+- token at `/app/data/config/token.txt`
 
 ## Tests
 

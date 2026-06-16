@@ -19,10 +19,11 @@ from ruamel.yaml import YAML
 sys.modules.setdefault("openpotd", sys.modules[__name__])
 
 BASE_DIR = Path(__file__).resolve().parent
-CONFIG_DIR = Path(os.getenv("OPENPOTD_CONFIG_DIR", str(BASE_DIR / "config"))).expanduser()
 DATA_DIR = Path(os.getenv("OPENPOTD_DATA_DIR", str(BASE_DIR / "data"))).expanduser()
+CONFIG_DIR = Path(os.getenv("OPENPOTD_CONFIG_DIR", str(DATA_DIR / "config"))).expanduser()
 DEFAULT_CONFIG_PATH = BASE_DIR / "default_config.yml"
 SCHEMA_PATH = BASE_DIR / "schema.sql"
+LEGACY_CONFIG_DIR = BASE_DIR / "config"
 
 
 def resolve_config_file(filename: str) -> Path:
@@ -32,7 +33,22 @@ def resolve_config_file(filename: str) -> Path:
     return path
 
 
+def migrate_legacy_config_dir():
+    if CONFIG_DIR == LEGACY_CONFIG_DIR:
+        return
+
+    legacy_config_path = LEGACY_CONFIG_DIR / "config.yml"
+    current_config_path = CONFIG_DIR / "config.yml"
+    if current_config_path.exists() or not legacy_config_path.exists():
+        return
+
+    CONFIG_DIR.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(LEGACY_CONFIG_DIR, CONFIG_DIR, dirs_exist_ok=True)
+
+
 def load_config() -> dict:
+    migrate_legacy_config_dir()
+
     config_path = CONFIG_DIR / "config.yml"
     if not config_path.exists():
         if not DEFAULT_CONFIG_PATH.exists():
