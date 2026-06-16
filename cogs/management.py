@@ -1223,6 +1223,52 @@ class Management(commands.Cog):
             ephemeral=True,
         )
 
+    @commands.command(name='set_public')
+    @commands.check(authorised)
+    async def set_public(self, ctx, problem: shared.POTD, enabled: bool):
+        cursor = self.bot.db.cursor()
+        cursor.execute('UPDATE problems SET public = ? WHERE id = ?', (enabled, problem.id))
+        self.bot.db.commit()
+        state = 'public' if enabled else 'private'
+        await ctx.send(f'Set {shared.config_otd_label(self.bot.config)} {problem.id} to {state}.')
+
+    @app_commands.command(name='set_public', description='Set whether a problem is public.')
+    async def set_public_slash(self, interaction: discord.Interaction, problem_id: int, enabled: bool):
+        if not interaction.user or not self._is_authorised_user(interaction.user.id):
+            await interaction.response.send_message('You are not authorised to use this command.', ephemeral=True)
+            return
+
+        cursor = self.bot.db.cursor()
+        cursor.execute('SELECT EXISTS (SELECT 1 FROM problems WHERE id = ?)', (problem_id,))
+        if not cursor.fetchone()[0]:
+            await interaction.response.send_message(f'No problem with ID `{problem_id}`.', ephemeral=True)
+            return
+
+        cursor.execute('UPDATE problems SET public = ? WHERE id = ?', (enabled, problem_id))
+        self.bot.db.commit()
+        state = 'public' if enabled else 'private'
+        await interaction.response.send_message(
+            f'Set {shared.config_otd_label(self.bot.config)} {problem_id} to {state}.',
+            ephemeral=True,
+        )
+
+    @commands.command()
+    @commands.check(authorised)
+    async def shutdown(self, ctx):
+        await ctx.send('Shutting down the bot.')
+        self.logger.info(f'Shutdown requested by {ctx.author.id}.')
+        await self.bot.close()
+
+    @app_commands.command(name='shutdown', description='Shut the bot down.')
+    async def shutdown_slash(self, interaction: discord.Interaction):
+        if not interaction.user or not self._is_authorised_user(interaction.user.id):
+            await interaction.response.send_message('You are not authorised to use this command.', ephemeral=True)
+            return
+
+        await interaction.response.send_message('Shutting down the bot.', ephemeral=True)
+        self.logger.info(f'Shutdown requested by {interaction.user.id}.')
+        await self.bot.close()
+
     @commands.command(name='review_submission')
     @commands.guild_only()
     async def review_submission(self, ctx, decision: str, *extra):

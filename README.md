@@ -75,6 +75,11 @@ Then create season + problems:
 3. `/add ...` for main problems
 4. `/add_subproblem ...` and `/link_subimg ...` for subproblems
 
+Useful authorised text commands:
+
+- `%set_public <problem_id> true|false`
+- `%shutdown`
+
 Post immediately with:
 
 - `/post` (today’s scheduled problem),
